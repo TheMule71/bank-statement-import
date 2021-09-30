@@ -263,12 +263,6 @@ class AccountStatementImportSheetParser(models.TransientModel):
                 if debit_credit == mapping.debit_value:
                     amount = -amount
 
-            if not original_currency:
-                original_currency = currency
-                original_amount = amount
-            elif original_currency == currency:
-                original_amount = amount
-
             if original_amount:
                 original_amount = self._parse_decimal(
                     original_amount, mapping
@@ -303,7 +297,7 @@ class AccountStatementImportSheetParser(models.TransientModel):
         return lines
 
     @api.model
-    def _convert_line_to_transactions(self, line):
+    def _convert_line_to_transactions(self, line):  # noqa: C901
         """Hook for extension"""
         timestamp = line["timestamp"]
         amount = line["amount"]
@@ -322,18 +316,30 @@ class AccountStatementImportSheetParser(models.TransientModel):
             "date": timestamp,
             "amount": str(amount),
         }
-        if currency != original_currency:
+
+        if original_currency == currency:
+            original_currency = None
+            if not amount:
+                amount = original_amount
+            original_amount = "0.0"
+
+        if original_currency:
             original_currency = self.env["res.currency"].search(
                 [("name", "=", original_currency)],
                 limit=1,
             )
             if original_currency:
-                transaction.update(
-                    {
-                        "amount_currency": str(original_amount),
-                        "currency_id": original_currency.id,
-                    }
-                )
+                transaction["foreign_currency_id"] = original_currency.id
+            if original_amount:
+                transaction["amount_currency"] = str(original_amount)
+
+        if currency:
+            currency = self.env["res.currency"].search(
+                [("name", "=", currency)],
+                limit=1,
+            )
+            if currency:
+                transaction["currency_id"] = currency.id
 
         if transaction_id:
             transaction["unique_import_id"] = "{}-{}".format(
@@ -356,8 +362,13 @@ class AccountStatementImportSheetParser(models.TransientModel):
             note = "{}\n{}".format(note, note.strip())
         elif note:
             note = note.strip()
-        if note:
-            transaction["payment_ref"] = note
+        transaction["payment_ref"] = (
+            note
+            or reference
+            or description
+            or transaction.get("unique_import_id")
+            or "/"
+        )
 
         if partner_name:
             transaction["partner_name"] = partner_name

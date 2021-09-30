@@ -205,7 +205,9 @@ class TestAccountBankStatementImportTxtXlsx(common.TransactionCase):
         self.assertEqual(len(statement.line_ids), 1)
 
         line = statement.line_ids
-        self.assertEqual(line.currency_id, self.currency_eur)
+        self.assertEqual(line.currency_id, self.currency_usd)
+        self.assertEqual(line.amount, 1525.0)
+        self.assertEqual(line.foreign_currency_id, self.currency_eur)
         self.assertEqual(line.amount_currency, 1000.0)
 
     def test_original_currency_empty(self):
@@ -233,7 +235,7 @@ class TestAccountBankStatementImportTxtXlsx(common.TransactionCase):
         self.assertEqual(len(statement.line_ids), 1)
 
         line = statement.line_ids
-        self.assertFalse(line.currency_id)
+        self.assertFalse(line.foreign_currency_id)
         self.assertEqual(line.amount_currency, 0.0)
 
     def test_multi_currency(self):
@@ -268,7 +270,7 @@ class TestAccountBankStatementImportTxtXlsx(common.TransactionCase):
         self.assertEqual(len(statement.line_ids), 1)
 
         line = statement.line_ids
-        self.assertFalse(line.currency_id)
+        self.assertFalse(line.foreign_currency_id)
         self.assertEqual(line.amount, -33.5)
 
     def test_balance(self):
