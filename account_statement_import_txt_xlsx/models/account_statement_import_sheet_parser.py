@@ -347,7 +347,8 @@ class AccountStatementImportSheetParser(models.TransientModel):
                 int(timestamp.timestamp()),
             )
 
-        transaction["name"] = description or _("N/A")
+        # avoid errors due to sequence checking
+        del transaction["name"]
         if reference:
             transaction["ref"] = reference
 

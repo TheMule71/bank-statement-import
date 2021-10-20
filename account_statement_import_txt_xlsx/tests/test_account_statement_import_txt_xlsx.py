@@ -62,6 +62,30 @@ class TestAccountBankStatementImportTxtXlsx(common.TransactionCase):
         self.assertEqual(len(statement), 1)
         self.assertEqual(len(statement.line_ids), 2)
 
+    def test_import_csv_file_with_dates(self):
+        journal = self.AccountJournal.create(
+            {
+                "name": "Bank",
+                "type": "bank",
+                "code": "BANK",
+                "currency_id": self.currency_usd.id,
+            }
+        )
+        data = self._data_file("fixtures/sample_statement_en_dates.csv", "utf-8")
+        wizard = self.AccountStatementImport.with_context(journal_id=journal.id).create(
+            {
+                "statement_filename": "fixtures/sample_statement_en_dates.csv",
+                "statement_file": data,
+                "sheet_mapping_id": self.sample_statement_map.id,
+            }
+        )
+        wizard.with_context(
+            account_statement_import_txt_xlsx_test=True
+        ).import_file_button()
+        statement = self.AccountBankStatement.search([("journal_id", "=", journal.id)])
+        self.assertEqual(len(statement), 1)
+        self.assertEqual(len(statement.line_ids), 2)
+
     def test_import_empty_csv_file(self):
         journal = self.AccountJournal.create(
             {
